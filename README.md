@@ -14,7 +14,8 @@ The final dashboard contains KPIs, rankings, distributions, trends, filters, and
 
 ## 📊 Dashboard Preview
 
-![IMDb Top 1000 Movies Power BI Dashboard](movie_dashboard.png)
+<img width="6150" height="3525" alt="movie_analysis" src="https://github.com/user-attachments/assets/ee3f021b-e9b3-4c83-a77b-11fa13b8857f" />
+
 
 The dashboard contains:
 
@@ -358,133 +359,35 @@ That is an important lesson from this project:
 
 # 8. Fixing the Misaligned Data
 
-To solve this, I used a Python cleaning function that checks whether values appear to belong to the correct column.
+After saving the scraped data as a CSV, I opened it in a spreadsheet for further exploration and validation.
 
-The basic idea is to identify values based on their expected format.
+I noticed that some movies were missing attributes such as Certificate, which caused values like Duration or IMDb Rating to shift into the wrong columns.
 
-For example:
+I used spreadsheet filters, formulas, and REGEX to identify these incorrect rows and move the values into their correct columns.
 
-- Certificates are expected to look like certificate labels.
-- Years should be numeric years.
-- Duration should be a number followed by minutes or a numeric duration.
-- IMDb Rating should be a decimal value in the expected rating range.
+For example, I used patterns such as:
 
-A cleaning function can be written like this:
-
-```python
-import re
-import pandas as pd
-
-
-KNOWN_CERTIFICATES = {
-    "G",
-    "PG",
-    "PG-13",
-    "R",
-    "NC-17",
-    "NR",
-    "TV-G",
-    "TV-PG",
-    "TV-14",
-    "TV-MA",
-    "Approved",
-    "Passed",
-    "Not Rated",
-    "Unrated"
-}
-
-
-def clean_movie_row(row):
-
-    values = [
-        row.get("Certificate"),
-        row.get("Year of relase"),
-        row.get("Duration"),
-        row.get("IMDB Rating")
-    ]
-
-    values = [
-        "" if pd.isna(value) else str(value).strip()
-        for value in values
-    ]
-
-    certificate = ""
-    year = ""
-    duration = ""
-    imdb_rating = ""
-
-    # Identify certificate
-    for value in values:
-        if value in KNOWN_CERTIFICATES:
-            certificate = value
-            break
-
-    # Identify year
-    for value in values:
-        if re.fullmatch(r"\d{4}", value):
-            year = value
-            break
-
-    # Identify IMDb rating
-    for value in values:
-        try:
-            number = float(value)
-
-            if 0 <= number <= 10:
-                imdb_rating = number
-                break
-
-        except (ValueError, TypeError):
-            pass
-
-    # Identify duration
-    for value in values:
-        duration_match = re.search(
-            r"(\d{1,4})\s*(?:min|mins|minutes)?",
-            value.lower()
-        )
-
-        if duration_match:
-            number = int(duration_match.group(1))
-
-            # Avoid treating the year or IMDb rating as duration
-            if number != int(year) if year else True:
-                if number > 10:
-                    duration = number
-                    break
-
-    row["Certificate"] = certificate
-    row["Year of relase"] = year
-    row["Duration"] = duration
-    row["IMDB Rating"] = imdb_rating
-
-    return row
+```code
+^\d{4}$
 ```
+to identify 4-digit release years and separate them from other values.
 
-The function can then be applied to the dataset:
-
-```python
-df = df.apply(clean_movie_row, axis=1)
-```
-
-The exact cleaning logic can be adjusted depending on the values returned by the source.
-
-### Why this approach?
-
-Instead of blindly trusting column position, the cleaning process checks the **meaning and format of the value**.
-
-This is an important data-analysis principle:
-
+The process was:
 ```text
-Do not only ask:
-"Which column is this value in?"
-
-Also ask:
-"Does this value actually belong in this column?"
+CSV
+ ↓
+Spreadsheet Validation
+ ↓
+Filters + REGEX + Formulas
+ ↓
+Fix Misaligned Values
+ ↓
+Clean Dataset
+ ↓
+Power BI
 ```
-
+This validation step helped ensure the dataset was consistent before building the dashboard.
 ---
-
 # 9. Data Cleaning
 
 After identifying the structural issues, the dataset was cleaned and standardized.
@@ -756,85 +659,6 @@ Communicate Results
 The spreadsheet validation stage was particularly useful because it revealed an issue that was not immediately obvious from the Python output.
 
 This demonstrates why a Data Analyst should not simply assume that scraped or exported data is correct.
-
----
-
-# 📁 Suggested Project Structure
-
-```text
-IMDb-Top-1000-Movies/
-│
-├── data/
-│   └── movies_data.csv
-│
-├── src/
-│   ├── scraper.py
-│   └── cleaning.py
-│
-├── dashboard/
-│   └── IMDb_Top_1000.pbix
-│
-├── movie_dashboard.png
-│
-└── README.md
-```
-
----
-
-# 🚀 How to Run the Project
-
-## 1. Clone the repository
-
-```bash
-git clone <your-repository-url>
-cd IMDb-Top-1000-Movies
-```
-
-## 2. Install dependencies
-
-```bash
-pip install requests pandas beautifulsoup4
-```
-
-## 3. Run the scraper
-
-```bash
-python scraper.py
-```
-
-This creates:
-
-```text
-movies_data.csv
-```
-
-## 4. Validate the CSV
-
-Open the CSV in Excel or another spreadsheet application and inspect:
-
-- Missing values
-- Incorrect values
-- Shifted columns
-- Unexpected formats
-- Duplicate records
-
-## 5. Run the cleaning process
-
-Apply the cleaning functions to correct structural issues and standardize the data.
-
-## 6. Open Power BI
-
-Import the cleaned CSV into Power BI.
-
-Then create the required:
-
-- Measures
-- KPIs
-- Charts
-- Slicers
-- Tables
-
-Finally, build the dashboard shown above.
 
 ---
 
